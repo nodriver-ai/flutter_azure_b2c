@@ -6,18 +6,21 @@ import 'dart:async';
 import 'dart:html' as html show window;
 
 import 'package:flutter/services.dart';
+import 'package:flutter_azure_b2c/web/B2CProviderWeb.dart';
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 
 /// A web implementation of the MsalAuth plugin.
-class AzureB2CWeb {
+class B2CPluginWeb {
+  B2CProviderWeb _provider = B2CProviderWeb();
+
   static void registerWith(Registrar registrar) {
     final MethodChannel channel = MethodChannel(
-      'msal_auth',
+      'flutter_azure_b2c',
       const StandardMethodCodec(),
       registrar,
     );
 
-    final pluginInstance = AzureB2CWeb();
+    final pluginInstance = B2CPluginWeb();
     channel.setMethodCallHandler(pluginInstance.handleMethodCall);
   }
 
@@ -26,8 +29,29 @@ class AzureB2CWeb {
   /// https://flutter.dev/go/federated-plugins
   Future<dynamic> handleMethodCall(MethodCall call) async {
     switch (call.method) {
-      case 'getPlatformVersion':
-        return getPlatformVersion();
+      case 'init':
+        var args = call.arguments;
+
+        String configFileName = args["configFile"];
+        if (!configFileName.toLowerCase().endsWith(".json"))
+          configFileName = configFileName + ".json";
+
+        await _provider.init(configFileName);
+        return "B2C_PLUGIN_DEFAULT";
+
+      case 'policyTriggerInteractive':
+        var args = call.arguments;
+
+        String policyName = args["policyName"];
+        List<String> scopes = args["scopes"];
+        String? loginHint;
+        if (args.containsKey("loginHint")) {
+          loginHint = args["loginHint"];
+        }
+        await _provider.policyTriggerInteractive(policyName, scopes, loginHint);
+
+        return "B2C_PLUGIN_DEFAULT";
+
       default:
         throw PlatformException(
           code: 'Unimplemented',

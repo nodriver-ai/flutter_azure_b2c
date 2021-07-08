@@ -6,3 +6,4 @@
 
 build/
 example/android/app/src/main/res/raw/auth_config.json
+example/web/assets/auth_config.json

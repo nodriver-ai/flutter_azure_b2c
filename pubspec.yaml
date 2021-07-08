@@ -1,7 +1,7 @@
 name: flutter_azure_b2c
 description: A new flutter plugin project.
 version: 0.0.1
-homepage: "https://github.com/chipscal/flutter_azure_b2c"
+homepage: "https://github.com/nodriver-ai/flutter_azure_b2c"
 
 environment:
   sdk: ">=2.12.0 <3.0.0"
@@ -12,6 +12,8 @@ dependencies:
     sdk: flutter
   flutter_web_plugins:
     sdk: flutter
+  msal_js: ^2.14.0
+  
 
 dev_dependencies:
   flutter_test:
@@ -29,11 +31,11 @@ flutter:
   plugin:
     platforms:
       android:
-        package: com.nodriver.msal_auth
-        pluginClass: MsalAuthPlugin
+        package: com.nodriver.flutter_azure_b2c
+        pluginClass: B2CPlugin
       web:
-        pluginClass: MsalAuthWeb
-        fileName: msal_auth_web.dart
+        pluginClass: B2CPluginWeb
+        fileName: flutter_azure_b2c_web.dart
 
   # To add assets to your plugin package, add an assets section, like this:
   # assets:
