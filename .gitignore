@@ -1,0 +1,8 @@
+.DS_Store
+.dart_tool/
+
+.packages
+.pub/
+
+build/
+example/android/app/src/main/res/raw/auth_config.json

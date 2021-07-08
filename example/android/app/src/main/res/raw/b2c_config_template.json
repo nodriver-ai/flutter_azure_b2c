@@ -1,0 +1,17 @@
+{
+  "client_id" : "<application (client) id>",
+  "redirect_uri" : "msauth://<com.yourcompany.yourapp>/<signaturehash see https://docs.microsoft.com/en-us/azure/active-directory/develop/tutorial-v2-android>",
+  "account_mode" : "MULTI",
+  "broker_redirect_uri_registered": false,
+  "authorities": [
+    {
+      "type": "B2C",
+      "authority_url": "https://<youractivedirectoryname>.b2clogin.com/<youractivedirectoryname>.onmicrosoft.com/<sign_in_up_policy_name>/",
+      "default": true
+    },
+    {
+      "type": "B2C",
+      "authority_url": "https://<youractivedirectoryname>.b2clogin.com/<youractivedirectoryname>.onmicrosoft.com/<other_policy e.g. reset_pass>/"
+    }
+  ]
+}
