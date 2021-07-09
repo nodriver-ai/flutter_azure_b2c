@@ -34,8 +34,8 @@ class B2CPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
     }
 
     override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
-        if (call.method == "getPlatformVersion") {
-            result.success("android")
+        if (call.method == "handleRedirectFuture") {
+            result.success("B2C_PLUGIN_DEFAULT")
         }
         else if (call.method == "init"){
             var args = call.arguments as Map<String, Any>

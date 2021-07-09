@@ -9,6 +9,10 @@ class AzureB2C {
   static const MethodChannel _channel =
       const MethodChannel('flutter_azure_b2c');
 
+  static Future handleRedirectFuture() async {
+    await _channel.invokeMethod('handleRedirectFuture');
+  }
+
   static Future<String?> init() async {
     _channel.setMethodCallHandler(_methodCallHandler);
     var args = {"configFile": "auth_config"};

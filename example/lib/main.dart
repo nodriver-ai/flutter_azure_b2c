@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -21,6 +22,8 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
+    var a = AzureB2C.handleRedirectFuture();
+    // a.then((value) => AzureB2C.init());
   }
 
   @override

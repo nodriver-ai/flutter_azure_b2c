@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 // In order to *not* need this ignore, consider extracting the "web" version
 // of your plugin as a separate package, instead of inlining it in the same
 // package as the core of your plugin.
@@ -11,17 +12,22 @@ import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 
 /// A web implementation of the MsalAuth plugin.
 class B2CPluginWeb {
-  B2CProviderWeb _provider = B2CProviderWeb();
+  late B2CProviderWeb _provider;
+  static late final MethodChannel _channel;
+
+  B2CPluginWeb() {
+    _provider = B2CProviderWeb("", callback: _pluginListener);
+  }
 
   static void registerWith(Registrar registrar) {
-    final MethodChannel channel = MethodChannel(
+    _channel = MethodChannel(
       'flutter_azure_b2c',
       const StandardMethodCodec(),
       registrar,
     );
 
     final pluginInstance = B2CPluginWeb();
-    channel.setMethodCallHandler(pluginInstance.handleMethodCall);
+    _channel.setMethodCallHandler(pluginInstance.handleMethodCall);
   }
 
   /// Handles method calls over the MethodChannel of this plugin.
@@ -29,6 +35,9 @@ class B2CPluginWeb {
   /// https://flutter.dev/go/federated-plugins
   Future<dynamic> handleMethodCall(MethodCall call) async {
     switch (call.method) {
+      case 'handleRedirectFuture':
+        B2CProviderWeb.storeRedirectHash();
+        return "B2C_PLUGIN_DEFAULT";
       case 'init':
         var args = call.arguments;
 
@@ -36,14 +45,16 @@ class B2CPluginWeb {
         if (!configFileName.toLowerCase().endsWith(".json"))
           configFileName = configFileName + ".json";
 
-        await _provider.init(configFileName);
+        _provider.init(configFileName);
         return "B2C_PLUGIN_DEFAULT";
 
       case 'policyTriggerInteractive':
         var args = call.arguments;
 
         String policyName = args["policyName"];
-        List<String> scopes = args["scopes"];
+        List<String> scopes = <String>[];
+        for (var oScope in args["scopes"]) scopes.add(oScope);
+
         String? loginHint;
         if (args.containsKey("loginHint")) {
           loginHint = args["loginHint"];
@@ -60,9 +71,7 @@ class B2CPluginWeb {
     }
   }
 
-  /// Returns a [String] containing the version of the platform.
-  Future<String> getPlatformVersion() {
-    final version = html.window.navigator.userAgent;
-    return Future.value(version);
+  Future<void> _pluginListener(B2COperationResult result) async {
+    _channel.invokeMethod("onEvent", json.encode(result));
   }
 }

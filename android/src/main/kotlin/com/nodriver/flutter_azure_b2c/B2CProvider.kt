@@ -26,8 +26,8 @@ class B2CProvider(
     companion object {
         const val B2C_PASSWORD_CHANGE = "AADB2C90118"
         const val INIT = "init"
-        const val POLICY_TRIGGER_SILENTLY = "sign_in_silently"
-        const val POLICY_TRIGGER_INTERACTIVE = "sign_in_interactive"
+        const val POLICY_TRIGGER_SILENTLY = "policy_trigger_silently"
+        const val POLICY_TRIGGER_INTERACTIVE = "policy_trigger_interactive"
         const val SING_OUT = "sign_out"
     }
 
