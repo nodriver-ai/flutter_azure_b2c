@@ -63,6 +63,49 @@ class B2CPluginWeb {
 
         return "B2C_PLUGIN_DEFAULT";
 
+      case 'policyTriggerSilently':
+        var args = call.arguments;
+        String subject = args["subject"];
+        String policyName = args["policyName"];
+        List<String> scopes = <String>[];
+        for (var oScope in args["scopes"]) scopes.add(oScope);
+
+        await _provider.policyTriggerSilently(subject, policyName, scopes);
+
+        return "B2C_PLUGIN_DEFAULT";
+
+      case 'signOut':
+        var args = call.arguments;
+        String subject = args["subject"];
+
+        await _provider.signOut(subject);
+
+        return "B2C_PLUGIN_DEFAULT";
+
+      case 'getSubjects':
+        var res = _provider.getSubjects();
+        return json.encode({"subjects": res});
+
+      case 'getSubjectInfo':
+        var args = call.arguments;
+        String subject = args["subject"];
+
+        var res = _provider.getSubjectInfo(subject);
+        if (res != null) {
+          return json.encode(res);
+        }
+        throw Exception("Subject not exists");
+
+      case 'getAccessToken':
+        var args = call.arguments;
+        String subject = args["subject"];
+
+        var res = _provider.getAccessToken(subject);
+        if (res != null) {
+          return json.encode(res);
+        }
+        throw Exception("Subject not exists");
+
       default:
         throw PlatformException(
           code: 'Unimplemented',

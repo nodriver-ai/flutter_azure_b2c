@@ -15,4 +15,6 @@ class B2CUserInfo {
       this.claims[key] = dClaims[key];
     }
   }
+
+  Map toJson() => {"subject": subject, "username": username, "claims": claims};
 }

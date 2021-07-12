@@ -84,7 +84,7 @@ class AzureB2C {
     final Map<String, dynamic>? res =
         json.decode(await _channel.invokeMethod('getAccessToken', args));
     if (res != null)
-      return B2CAccessToken.fromJson(subject, res);
+      return B2CAccessToken.fromJson(res);
     else
       return null;
   }

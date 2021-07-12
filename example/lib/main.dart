@@ -23,7 +23,7 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     var a = AzureB2C.handleRedirectFuture();
-    // a.then((value) => AzureB2C.init());
+    a.then((value) => AzureB2C.init());
   }
 
   @override

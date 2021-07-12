@@ -2,6 +2,9 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:html';
 
+import 'package:flutter_azure_b2c/B2CAccessToken.dart';
+import 'package:flutter_azure_b2c/B2CUserInfo.dart';
+import 'package:intl/intl.dart';
 import 'package:msal_js/msal_js.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
@@ -33,7 +36,8 @@ typedef B2CCallback = Future<void> Function(B2COperationResult);
 
 class B2CProviderWeb {
   PublicClientApplication? _b2cApp;
-  Map<String, AuthenticationResult> _users = {};
+  Map<String, AccountInfo> _users = {};
+  Map<String, B2CAccessToken> _accessTokens = {};
   Configuration? _configuration;
   B2CInteractionMode _interactionMode = B2CInteractionMode.POPUP;
   String? _hostName;
@@ -45,12 +49,15 @@ class B2CProviderWeb {
 
   static const String _B2C_PASSWORD_CHANGE = "AADB2C90118";
   static const String _B2C_USER_CANCELLED = "user_cancelled";
+  static const String _B2C_PLUGIN_LAST_ACCESS = "b2c_plugin_last_access";
 
   static const String _INIT = "init";
   static const String _POLICY_TRIGGER_SILENTLY = "policy_trigger_silently";
   static const String _POLICY_TRIGGER_INTERACTIVE =
       "policy_trigger_interactive";
   static const String _SING_OUT = "sign_out";
+
+  static final DateFormat _format = DateFormat("E MMM dd yyyy hh:mm:ss Z");
 
   B2CProviderWeb(this.tag, {this.callback});
 
@@ -96,11 +103,34 @@ class B2CProviderWeb {
           ..knownAuthorities = authorities);
 
       _b2cApp = PublicClientApplication(_configuration!);
+      _loadAllAccounts();
+
+      if (window.localStorage.containsKey(_B2C_PLUGIN_LAST_ACCESS)) {
+        try {
+          B2CAccessToken lastAccessToken = B2CAccessToken.fromJson(
+              json.decode(window.localStorage[_B2C_PLUGIN_LAST_ACCESS]!));
+          if (_users.containsKey(lastAccessToken.subject)) {
+            _accessTokens[lastAccessToken.subject] = lastAccessToken;
+          }
+        } catch (exception) {
+          log("SessionStorage temp access token parse failed: $exception",
+              name: tag);
+        } finally {
+          window.localStorage.remove(_B2C_PLUGIN_LAST_ACCESS);
+        }
+      }
 
       if (_lastHash != null && _lastHash != "#/") {
         var result = await _b2cApp!.handleRedirectFuture(_lastHash);
         if (result != null) {
-          _users[result.uniqueId] = result;
+          _users[result.uniqueId] = result.account!;
+          _accessTokens[result.uniqueId] = _accessTokenFromAuthResult(result);
+
+          // MSAL seams to reload the page after the handleRedirectFuture is
+          // completed, so we temporarly store the access token in the session
+          // storage to use it later, e.g. see code before.
+          window.localStorage[_B2C_PLUGIN_LAST_ACCESS] =
+              json.encode(_accessTokenFromAuthResult(result));
         }
 
         _lastHash = null;
@@ -130,7 +160,8 @@ class B2CProviderWeb {
           ..authority = getAuthorityFromPolicyName(policyName)
           ..loginHint = loginHint);
 
-        _users[result.uniqueId] = result;
+        _users[result.uniqueId] = result.account!;
+        _accessTokens[result.uniqueId] = _accessTokenFromAuthResult(result);
       }
       _emitCallback(B2COperationResult(
           tag, _POLICY_TRIGGER_INTERACTIVE, B2COperationState.SUCCESS));
@@ -168,18 +199,96 @@ class B2CProviderWeb {
     try {
       var user = _users[subject];
       if (user == null) {
+        _emitCallback(B2COperationResult(
+            tag, _POLICY_TRIGGER_SILENTLY, B2COperationState.CLIENT_ERROR));
         return;
       }
-      _users[subject] = await _b2cApp!.acquireTokenSilent(SilentRequest()
-        ..account = user.account
+      var result = await _b2cApp!.acquireTokenSilent(SilentRequest()
+        ..account = user
         ..scopes = scopes
         ..authority = getAuthorityFromPolicyName(policyName));
-    } on AuthException catch (exception) {}
+
+      _accessTokens[subject] = _accessTokenFromAuthResult(result);
+
+      _emitCallback(B2COperationResult(
+          tag, _POLICY_TRIGGER_SILENTLY, B2COperationState.SUCCESS));
+    } on AuthException catch (exception) {
+      log("Authentication failed: $exception", name: tag);
+      if (exception is ClientAuthException) {
+        _emitCallback(B2COperationResult(
+            tag, _POLICY_TRIGGER_SILENTLY, B2COperationState.CLIENT_ERROR));
+      } else if (exception is ServerException) {
+        /* Exception when communicating with the STS, likely config issue */
+        _emitCallback(B2COperationResult(
+            tag, _POLICY_TRIGGER_SILENTLY, B2COperationState.SERVICE_ERROR));
+      } else if (exception is InteractionRequiredAuthException) {
+        /* Tokens expired or no session, retry with interactive */
+        _emitCallback(B2COperationResult(tag, _POLICY_TRIGGER_SILENTLY,
+            B2COperationState.USER_INTERACTION_REQUIRED));
+      }
+    }
+  }
+
+  Future signOut(String subject) async {
+    try {
+      var user = _users[subject];
+      if (user == null) {
+        _emitCallback(B2COperationResult(
+            tag, _POLICY_TRIGGER_SILENTLY, B2COperationState.CLIENT_ERROR));
+        return;
+      }
+
+      if (_interactionMode == B2CInteractionMode.REDIRECT) {
+        await _b2cApp!.logoutRedirect(EndSessionRequest()..account = user);
+        return; //redirect flow will restart the app
+      } else {
+        await _b2cApp!.logoutPopup(EndSessionPopupRequest()..account = user);
+
+        _users.remove(user.idTokenClaims!["sub"]);
+      }
+    } on AuthException {
+      _emitCallback(
+          B2COperationResult(tag, _SING_OUT, B2COperationState.CLIENT_ERROR));
+    }
+  }
+
+  List<String> getSubjects() {
+    List<String> toRet = [];
+    for (var sub in _users.keys) toRet.add(sub);
+
+    return toRet;
+  }
+
+  B2CUserInfo? getSubjectInfo(String subject) {
+    if (_users.containsKey(subject)) {
+      var user = _users[subject]!;
+      return B2CUserInfo(subject, user.username, user.idTokenClaims!);
+    }
+    return null;
+  }
+
+  B2CAccessToken? getAccessToken(String subject) {
+    if (_accessTokens.containsKey(subject)) {
+      return _accessTokens[subject]!;
+    }
+    return null;
   }
 
   static void storeRedirectHash() {
     _lastHash = window.location.hash;
     log(_lastHash!, name: "B2CProviderWebStatic");
+  }
+
+  B2CAccessToken _accessTokenFromAuthResult(AuthenticationResult result) {
+    return B2CAccessToken(result.uniqueId, result.accessToken,
+        _format.parse(result.expiresOn.toString()));
+  }
+
+  void _loadAllAccounts() {
+    var accounts = _b2cApp!.getAllAccounts();
+    for (var account in accounts) {
+      _users[account.idTokenClaims!["sub"]] = account;
+    }
   }
 
   void _emitCallback(B2COperationResult result) {

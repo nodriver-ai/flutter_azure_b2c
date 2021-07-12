@@ -133,6 +133,7 @@ class B2CPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
                     "Unable to find authenticated user: $subject", null)
             else
                 result.success(json.toJson(mapOf(
+                    "subject" to subject,
                     "token" to accessToken,
                     "expireOn" to PluginUtilities.toIsoFormat(expireDate!!)
                 )))
