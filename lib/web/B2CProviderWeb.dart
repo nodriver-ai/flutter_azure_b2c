@@ -111,6 +111,8 @@ class B2CProviderWeb {
               json.decode(window.localStorage[_B2C_PLUGIN_LAST_ACCESS]!));
           if (_users.containsKey(lastAccessToken.subject)) {
             _accessTokens[lastAccessToken.subject] = lastAccessToken;
+            _emitCallback(B2COperationResult(
+                tag, _POLICY_TRIGGER_INTERACTIVE, B2COperationState.SUCCESS));
           }
         } catch (exception) {
           log("SessionStorage temp access token parse failed: $exception",
@@ -121,21 +123,24 @@ class B2CProviderWeb {
       }
 
       if (_lastHash != null && _lastHash != "#/") {
-        var result = await _b2cApp!.handleRedirectFuture(_lastHash);
-        if (result != null) {
-          _users[result.uniqueId] = result.account!;
-          _accessTokens[result.uniqueId] = _accessTokenFromAuthResult(result);
+        if (_lastHash!.contains(_B2C_PASSWORD_CHANGE)) {
+          _emitCallback(B2COperationResult(tag, _POLICY_TRIGGER_INTERACTIVE,
+              B2COperationState.PASSWORD_RESET));
+        } else {
+          var result = await _b2cApp!.handleRedirectFuture(_lastHash);
+          if (result != null) {
+            _users[result.uniqueId] = result.account!;
+            _accessTokens[result.uniqueId] = _accessTokenFromAuthResult(result);
 
-          // MSAL seams to reload the page after the handleRedirectFuture is
-          // completed, so we temporarly store the access token in the session
-          // storage to use it later, e.g. see code before.
-          window.localStorage[_B2C_PLUGIN_LAST_ACCESS] =
-              json.encode(_accessTokenFromAuthResult(result));
+            // MSAL seams to reload the page after the handleRedirectFuture is
+            // completed, so we temporarly store the access token in the local
+            // storage to use it later, e.g. see code before.
+            window.localStorage[_B2C_PLUGIN_LAST_ACCESS] =
+                json.encode(_accessTokenFromAuthResult(result));
+          }
         }
 
         _lastHash = null;
-        _emitCallback(B2COperationResult(
-            tag, _POLICY_TRIGGER_INTERACTIVE, B2COperationState.SUCCESS));
       }
 
       _emitCallback(B2COperationResult(tag, _INIT, B2COperationState.SUCCESS));
