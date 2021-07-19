@@ -3,31 +3,51 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_azure_b2c/B2CAccessToken.dart';
+import 'package:flutter_azure_b2c/B2CConfiguration.dart';
+import 'package:flutter_azure_b2c/B2COperationResult.dart';
 import 'package:flutter_azure_b2c/B2CUserInfo.dart';
+
+typedef AzureB2CCallback = Future<void> Function(B2COperationState);
 
 class AzureB2C {
   static const MethodChannel _channel =
       const MethodChannel('flutter_azure_b2c');
 
+  static Map<B2COperationSource, List<AzureB2CCallback>> _callbacks = {
+    B2COperationSource.INIT: <AzureB2CCallback>[],
+    B2COperationSource.POLICY_TRIGGER_INTERACTIVE: <AzureB2CCallback>[],
+    B2COperationSource.POLICY_TRIGGER_SILENTLY: <AzureB2CCallback>[],
+    B2COperationSource.SING_OUT: <AzureB2CCallback>[],
+  };
+
+  static void registerCallback(
+      B2COperationSource source, AzureB2CCallback callback) {
+    _callbacks[source]!.add(callback);
+  }
+
+  static void unregisterCallback(
+      B2COperationSource source, AzureB2CCallback callback) {
+    _callbacks[source]!.remove(callback);
+  }
+
   static Future handleRedirectFuture() async {
     await _channel.invokeMethod('handleRedirectFuture');
   }
 
-  static Future<String?> init() async {
+  static Future<String?> init(String configFileName) async {
     _channel.setMethodCallHandler(_methodCallHandler);
-    var args = {"configFile": "auth_config"};
+    var args = {"configFile": configFileName};
 
     final String? res = await _channel.invokeMethod('init', args);
     return res;
   }
 
-  static Future<String?> policyTriggerInteractive() async {
+  static Future<String?> policyTriggerInteractive(
+      String policyName, List<String> scopes, String? loginHint) async {
     var args = {
-      "policyName": "B2C_1_Irreo_sign_up_in",
-      "scopes": <String>[
-        "https://nodriverservices.onmicrosoft.com/9c26e9a7-4bcf-4fb0-9582-3552a70219fe/Irreo.APIv2.Access"
-      ],
-      "loginHint": "luca.calacci@gmail.com"
+      "policyName": policyName,
+      "scopes": scopes,
+      "loginHint": loginHint
     };
 
     final String? res =
@@ -35,14 +55,9 @@ class AzureB2C {
     return res;
   }
 
-  static Future<String?> policyTriggerSilently(String subject) async {
-    var args = {
-      "policyName": "B2C_1_Irreo_sign_up_in",
-      "scopes": <String>[
-        "https://nodriverservices.onmicrosoft.com/9c26e9a7-4bcf-4fb0-9582-3552a70219fe/Irreo.APIv2.Access"
-      ],
-      "subject": subject
-    };
+  static Future<String?> policyTriggerSilently(
+      String policyName, List<String> scopes, String subject) async {
+    var args = {"policyName": policyName, "scopes": scopes, "subject": subject};
 
     final String? res =
         await _channel.invokeMethod('policyTriggerSilently', args);
@@ -89,7 +104,16 @@ class AzureB2C {
       return null;
   }
 
+  static Future<B2CConfiguration?> getConfiguration() async {
+    return B2CConfiguration.fromJson(
+        json.decode(await _channel.invokeMethod('getConfiguration')));
+  }
+
   static Future<void> _methodCallHandler(MethodCall call) async {
     print(call.arguments);
+    var result = B2COperationResult.fromJson(json.decode(call.arguments));
+    for (var callback in _callbacks[result.source]!) {
+      await callback(result.reason);
+    }
   }
 }

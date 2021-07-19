@@ -3,34 +3,14 @@ import 'dart:developer';
 import 'dart:html';
 
 import 'package:flutter_azure_b2c/B2CAccessToken.dart';
+import 'package:flutter_azure_b2c/B2CConfiguration.dart';
+import 'package:flutter_azure_b2c/B2COperationResult.dart';
 import 'package:flutter_azure_b2c/B2CUserInfo.dart';
 import 'package:intl/intl.dart';
 import 'package:msal_js/msal_js.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 enum B2CInteractionMode { REDIRECT, POPUP }
-
-enum B2COperationState {
-  READY,
-  SUCCESS,
-  PASSWORD_RESET,
-  USER_CANCELLED_OPERATION,
-  USER_INTERACTION_REQUIRED,
-  CLIENT_ERROR,
-  SERVICE_ERROR
-}
-
-class B2COperationResult {
-  String tag;
-  String source;
-  B2COperationState reason;
-  Object? data;
-
-  B2COperationResult(this.tag, this.source, this.reason, {this.data});
-
-  Map toJson() =>
-      {"tag": tag, "source": source, "reason": reason.toString().split(".")[1]};
-}
 
 typedef B2CCallback = Future<void> Function(B2COperationResult);
 
@@ -42,6 +22,8 @@ class B2CProviderWeb {
   B2CInteractionMode _interactionMode = B2CInteractionMode.POPUP;
   String? _hostName;
   String? _tenantName;
+  List<String> _defaultScopes = [];
+
   static String? _lastHash;
 
   String tag;
@@ -51,13 +33,7 @@ class B2CProviderWeb {
   static const String _B2C_USER_CANCELLED = "user_cancelled";
   static const String _B2C_PLUGIN_LAST_ACCESS = "b2c_plugin_last_access";
 
-  static const String _INIT = "init";
-  static const String _POLICY_TRIGGER_SILENTLY = "policy_trigger_silently";
-  static const String _POLICY_TRIGGER_INTERACTIVE =
-      "policy_trigger_interactive";
-  static const String _SING_OUT = "sign_out";
-
-  static final DateFormat _format = DateFormat("E MMM dd yyyy hh:mm:ss Z");
+  static final DateFormat _format = DateFormat("E MMM dd yyyy HH:mm:ss Z");
 
   B2CProviderWeb(this.tag, {this.callback});
 
@@ -94,6 +70,12 @@ class B2CProviderWeb {
       }
       _setHostAndTenantFromAuthority(defaultAuthority!);
 
+      if (conf.containsKey("default_scopes")) {
+        for (String scope in conf["default_scopes"]) {
+          _defaultScopes.add(scope);
+        }
+      }
+
       _configuration = Configuration()
         ..cache = (CacheOptions()..cacheLocation = cache)
         ..auth = (BrowserAuthOptions()
@@ -112,7 +94,9 @@ class B2CProviderWeb {
           if (_users.containsKey(lastAccessToken.subject)) {
             _accessTokens[lastAccessToken.subject] = lastAccessToken;
             _emitCallback(B2COperationResult(
-                tag, _POLICY_TRIGGER_INTERACTIVE, B2COperationState.SUCCESS));
+                tag,
+                B2COperationSource.POLICY_TRIGGER_INTERACTIVE,
+                B2COperationState.SUCCESS));
           }
         } catch (exception) {
           log("SessionStorage temp access token parse failed: $exception",
@@ -124,7 +108,9 @@ class B2CProviderWeb {
 
       if (_lastHash != null && _lastHash != "#/") {
         if (_lastHash!.contains(_B2C_PASSWORD_CHANGE)) {
-          _emitCallback(B2COperationResult(tag, _POLICY_TRIGGER_INTERACTIVE,
+          _emitCallback(B2COperationResult(
+              tag,
+              B2COperationSource.POLICY_TRIGGER_INTERACTIVE,
               B2COperationState.PASSWORD_RESET));
         } else {
           var result = await _b2cApp!.handleRedirectFuture(_lastHash);
@@ -143,10 +129,11 @@ class B2CProviderWeb {
         _lastHash = null;
       }
 
-      _emitCallback(B2COperationResult(tag, _INIT, B2COperationState.SUCCESS));
+      _emitCallback(B2COperationResult(
+          tag, B2COperationSource.INIT, B2COperationState.SUCCESS));
     } catch (ex) {
-      _emitCallback(
-          B2COperationResult(tag, _INIT, B2COperationState.CLIENT_ERROR));
+      _emitCallback(B2COperationResult(
+          tag, B2COperationSource.INIT, B2COperationState.CLIENT_ERROR));
     }
   }
 
@@ -169,30 +156,42 @@ class B2CProviderWeb {
         _accessTokens[result.uniqueId] = _accessTokenFromAuthResult(result);
       }
       _emitCallback(B2COperationResult(
-          tag, _POLICY_TRIGGER_INTERACTIVE, B2COperationState.SUCCESS));
+          tag,
+          B2COperationSource.POLICY_TRIGGER_INTERACTIVE,
+          B2COperationState.SUCCESS));
     } on AuthException catch (exception) {
       if (exception.errorMessage.contains(_B2C_PASSWORD_CHANGE)) {
-        _emitCallback(B2COperationResult(tag, _POLICY_TRIGGER_INTERACTIVE,
+        _emitCallback(B2COperationResult(
+            tag,
+            B2COperationSource.POLICY_TRIGGER_INTERACTIVE,
             B2COperationState.PASSWORD_RESET));
       } else {
         /* Failed to acquireToken */
         log("Authentication failed: $exception", name: tag);
         if (exception is ClientAuthException) {
           /* Exception inside MSAL, more info inside MsalError.java */
-          _emitCallback(B2COperationResult(tag, _POLICY_TRIGGER_INTERACTIVE,
+          _emitCallback(B2COperationResult(
+              tag,
+              B2COperationSource.POLICY_TRIGGER_INTERACTIVE,
               B2COperationState.CLIENT_ERROR));
         } else if (exception is ServerException) {
           /* Exception when communicating with the STS, likely config issue */
-          _emitCallback(B2COperationResult(tag, _POLICY_TRIGGER_INTERACTIVE,
+          _emitCallback(B2COperationResult(
+              tag,
+              B2COperationSource.POLICY_TRIGGER_INTERACTIVE,
               B2COperationState.SERVICE_ERROR));
         } else if (exception is BrowserAuthException) {
           if (exception.errorCode.contains(_B2C_USER_CANCELLED)) {
             /* User closed popup */
-            _emitCallback(B2COperationResult(tag, _POLICY_TRIGGER_INTERACTIVE,
+            _emitCallback(B2COperationResult(
+                tag,
+                B2COperationSource.POLICY_TRIGGER_INTERACTIVE,
                 B2COperationState.USER_CANCELLED_OPERATION));
             return;
           }
-          _emitCallback(B2COperationResult(tag, _POLICY_TRIGGER_INTERACTIVE,
+          _emitCallback(B2COperationResult(
+              tag,
+              B2COperationSource.POLICY_TRIGGER_INTERACTIVE,
               B2COperationState.CLIENT_ERROR));
         }
       }
@@ -205,7 +204,9 @@ class B2CProviderWeb {
       var user = _users[subject];
       if (user == null) {
         _emitCallback(B2COperationResult(
-            tag, _POLICY_TRIGGER_SILENTLY, B2COperationState.CLIENT_ERROR));
+            tag,
+            B2COperationSource.POLICY_TRIGGER_SILENTLY,
+            B2COperationState.CLIENT_ERROR));
         return;
       }
       var result = await _b2cApp!.acquireTokenSilent(SilentRequest()
@@ -216,20 +217,28 @@ class B2CProviderWeb {
       _accessTokens[subject] = _accessTokenFromAuthResult(result);
 
       _emitCallback(B2COperationResult(
-          tag, _POLICY_TRIGGER_SILENTLY, B2COperationState.SUCCESS));
+          tag,
+          B2COperationSource.POLICY_TRIGGER_SILENTLY,
+          B2COperationState.SUCCESS));
     } on AuthException catch (exception) {
       log("Authentication failed: $exception", name: tag);
       if (exception is ClientAuthException) {
         _emitCallback(B2COperationResult(
-            tag, _POLICY_TRIGGER_SILENTLY, B2COperationState.CLIENT_ERROR));
+            tag,
+            B2COperationSource.POLICY_TRIGGER_SILENTLY,
+            B2COperationState.CLIENT_ERROR));
+      } else if (exception is InteractionRequiredAuthException) {
+        /* Tokens expired or no session, retry with interactive */
+        _emitCallback(B2COperationResult(
+            tag,
+            B2COperationSource.POLICY_TRIGGER_SILENTLY,
+            B2COperationState.USER_INTERACTION_REQUIRED));
       } else if (exception is ServerException) {
         /* Exception when communicating with the STS, likely config issue */
         _emitCallback(B2COperationResult(
-            tag, _POLICY_TRIGGER_SILENTLY, B2COperationState.SERVICE_ERROR));
-      } else if (exception is InteractionRequiredAuthException) {
-        /* Tokens expired or no session, retry with interactive */
-        _emitCallback(B2COperationResult(tag, _POLICY_TRIGGER_SILENTLY,
-            B2COperationState.USER_INTERACTION_REQUIRED));
+            tag,
+            B2COperationSource.POLICY_TRIGGER_SILENTLY,
+            B2COperationState.SERVICE_ERROR));
       }
     }
   }
@@ -239,7 +248,9 @@ class B2CProviderWeb {
       var user = _users[subject];
       if (user == null) {
         _emitCallback(B2COperationResult(
-            tag, _POLICY_TRIGGER_SILENTLY, B2COperationState.CLIENT_ERROR));
+            tag,
+            B2COperationSource.POLICY_TRIGGER_SILENTLY,
+            B2COperationState.CLIENT_ERROR));
         return;
       }
 
@@ -249,11 +260,11 @@ class B2CProviderWeb {
       } else {
         await _b2cApp!.logoutPopup(EndSessionPopupRequest()..account = user);
 
-        _users.remove(user.idTokenClaims!["sub"]);
+        _users.remove(_getUniqueId(user));
       }
     } on AuthException {
-      _emitCallback(
-          B2COperationResult(tag, _SING_OUT, B2COperationState.CLIENT_ERROR));
+      _emitCallback(B2COperationResult(
+          tag, B2COperationSource.SING_OUT, B2COperationState.CLIENT_ERROR));
     }
   }
 
@@ -279,6 +290,25 @@ class B2CProviderWeb {
     return null;
   }
 
+  B2CConfiguration? getConfiguration() {
+    var authorities = <B2CAuthority>[
+      B2CAuthority(_configuration!.auth!.authority!, "B2C", true)
+    ];
+    for (var authority in _configuration!.auth!.knownAuthorities!) {
+      //do not replicate default authority
+      if (authorities[0].authorityURL != authority) {
+        authorities.add(B2CAuthority(authority, "B2C", false));
+      }
+    }
+
+    return B2CConfiguration(_configuration!.auth!.clientId!,
+        _configuration!.auth!.redirectUri!, authorities,
+        cacheLocation:
+            _configuration!.cache!.cacheLocation.toString().split(".")[1],
+        interactionMode: _interactionMode.toString().split(".")[1],
+        defaultScopes: _defaultScopes);
+  }
+
   static void storeRedirectHash() {
     _lastHash = window.location.hash;
     log(_lastHash!, name: "B2CProviderWebStatic");
@@ -292,8 +322,14 @@ class B2CProviderWeb {
   void _loadAllAccounts() {
     var accounts = _b2cApp!.getAllAccounts();
     for (var account in accounts) {
-      _users[account.idTokenClaims!["sub"]] = account;
+      _users[_getUniqueId(account)] = account;
     }
+  }
+
+  String _getUniqueId(AccountInfo? accountInfo) {
+    if (accountInfo!.idTokenClaims!.containsKey("oid"))
+      return accountInfo.idTokenClaims!["oid"];
+    return accountInfo.idTokenClaims!["sub"];
   }
 
   void _emitCallback(B2COperationResult result) {

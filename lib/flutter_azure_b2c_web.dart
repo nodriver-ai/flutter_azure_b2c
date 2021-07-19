@@ -7,8 +7,12 @@ import 'dart:convert';
 import 'dart:html' as html show window;
 
 import 'package:flutter/services.dart';
+import 'package:flutter_azure_b2c/B2CConfiguration.dart';
 import 'package:flutter_azure_b2c/web/B2CProviderWeb.dart';
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
+import 'package:msal_js/msal_js.dart';
+
+import 'B2COperationResult.dart';
 
 /// A web implementation of the MsalAuth plugin.
 class B2CPluginWeb {
@@ -106,6 +110,12 @@ class B2CPluginWeb {
         }
         throw Exception("Subject not exists");
 
+      case 'getConfiguration':
+        var res = _provider.getConfiguration();
+        if (res != null) {
+          return json.encode(res);
+        }
+        throw Exception("Configuration not valid");
       default:
         throw PlatformException(
           code: 'Unimplemented',
