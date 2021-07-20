@@ -3,6 +3,7 @@ package com.nodriver.flutter_azure_b2c
 import android.app.Activity
 import android.content.Context
 import android.util.Log
+import com.google.gson.Gson
 import com.microsoft.identity.client.*
 import com.microsoft.identity.client.IPublicClientApplication.IMultipleAccountApplicationCreatedListener
 import com.microsoft.identity.client.IPublicClientApplication.LoadAccountsCallback
@@ -11,15 +12,16 @@ import com.microsoft.identity.client.exception.MsalException
 import com.microsoft.identity.client.exception.MsalServiceException
 import com.microsoft.identity.client.exception.MsalUiRequiredException
 import com.microsoft.identity.common.internal.authorities.Authority
+import org.json.JSONObject
 import java.util.*
 
+val json = Gson()
 
 /**
  * Azure AD B2C protocol provider.
  *
  */
 class B2CProvider(
-    private var TAG: String,
     private var operationListener: IB2COperationListener
 ) {
 
@@ -38,6 +40,7 @@ class B2CProvider(
     private var b2cApp: IMultipleAccountPublicClientApplication? = null
     private lateinit var hostName: String
     private lateinit var tenantName: String
+    private lateinit var defaultScopes: List<String>
 
     private val authResults: MutableMap<String, IAuthenticationResult> = mutableMapOf()
 
@@ -46,7 +49,7 @@ class B2CProvider(
      * Init B2C application. It look for existing accounts and retrieves information.
      *
      */
-    fun init(context: Context, configFileName: String) {
+    fun init(context: Context, tag: String, configFileName: String) {
         var configFileId = PluginUtilities.getRawResourceIdentifier(context, configFileName)
 
         PublicClientApplication.createMultipleAccountPublicClientApplication(context,
@@ -54,16 +57,26 @@ class B2CProvider(
             object : IMultipleAccountApplicationCreatedListener {
                 override fun onCreated(application: IMultipleAccountPublicClientApplication) {
                     b2cApp = application
-                    setHostAndTenantFromAuthority(b2cApp!!.configuration.defaultAuthority)
+                    setHostAndTenantFromAuthority(tag, b2cApp!!.configuration.defaultAuthority)
 
-                    Log.d(TAG, "Init success")
-                    loadAccounts(INIT)
+                    var jsonString = PluginUtilities.readRawString(context, configFileId)
+                    Log.d("B2CProvider", "[$tag] configuration:\n$jsonString")
+                    var json = JSONObject(jsonString)
+                    if (json.has("default_scopes")){
+                        var jsonScopes = json.getJSONArray("default_scopes")
+                        defaultScopes = List<String>(jsonScopes.length(), init = {idx: Int  ->
+                            jsonScopes.getString(idx)
+                        });
+                    }
+
+                    Log.d("B2CProvider", "[$tag] Init success")
+                    loadAccounts(tag, INIT)
 
                 }
 
                 override fun onError(exception: MsalException) {
-                    Log.d(TAG, "Init failed: $exception")
-                    operationListener.onEvent(B2COperationResult(TAG, INIT, B2COperationState.CLIENT_ERROR))
+                    Log.d("B2CProvider", "[$tag] Init failed: $exception")
+                    operationListener.onEvent(B2COperationResult(tag, INIT, B2COperationState.CLIENT_ERROR))
                 }
             })
 
@@ -78,7 +91,7 @@ class B2CProvider(
      * Once the user finishes with the flow, you will also receive an access token containing the
      * claims for the scope you passed in, which you can subsequently use to obtain your resources.
      */
-    fun policyTriggerInteractive(context: Context, activity: Activity,
+    fun policyTriggerInteractive(context: Context, activity: Activity, tag: String,
                                  policyName: String, scopes: List<String>, loginHint: String?) {
         if (b2cApp == null) {
             return
@@ -97,7 +110,7 @@ class B2CProvider(
             .withScopes(scopes)
             .withPrompt(Prompt.LOGIN)
             .withLoginHint(loginHint)
-            .withCallback(authInteractiveCallback)
+            .withCallback(authInteractiveCallback(tag))
             .build()
 
         b2cApp!!.acquireToken(parameters)
@@ -110,7 +123,7 @@ class B2CProvider(
      * Once the operation is completed, you will also receive an access token containing the
      * claims for the scope you passed in, which you can subsequently use to obtain your resources.
      */
-    fun policyTriggerSilently(subject: String, policyName: String, scopes: List<String>) {
+    fun policyTriggerSilently(tag: String, subject: String, policyName: String, scopes: List<String>) {
         if (b2cApp == null) {
             return
         }
@@ -121,14 +134,14 @@ class B2CProvider(
             tenantName,
             policyName,
             scopes,
-            authSilentCallback)
+            authSilentCallback(tag))
     }
 
     /**
      * Sign out user and erases associated tokens
      *
      */
-    fun signOut(subject: String) {
+    fun signOut(tag: String, subject: String) {
         if (b2cApp == null) {
             return
         }
@@ -137,15 +150,15 @@ class B2CProvider(
         selectedUser!!.signOutAsync(b2cApp!!,
             object : IMultipleAccountPublicClientApplication.RemoveAccountCallback {
                 override fun onRemoved() {
-                    loadAccounts(SING_OUT)
+                    loadAccounts(tag, SING_OUT)
                     synchronized(authResults) {
                         authResults.remove(subject);
                     }
                 }
 
                 override fun onError(exception: MsalException) {
-                    Log.d(TAG, "Sign Out error: $exception")
-                    operationListener.onEvent(B2COperationResult(TAG, SING_OUT, B2COperationState.CLIENT_ERROR))
+                    Log.d("B2CProvider", "[$tag] Sign Out error: $exception")
+                    operationListener.onEvent(B2COperationResult(tag, SING_OUT, B2COperationState.CLIENT_ERROR))
                 }
             })
     }
@@ -155,8 +168,26 @@ class B2CProvider(
      *
      * @return the provider configuration
      */
-    fun getConfiguration() : PublicClientApplicationConfiguration {
-        return b2cApp!!.configuration
+    fun getConfiguration() : B2CConfigurationAndroid {
+        var conf = b2cApp!!.configuration
+
+        var authorities: MutableList<B2CAuthority> = mutableListOf(
+            B2CAuthority(conf.defaultAuthority.authorityURL.toString(),
+                conf.defaultAuthority.authorityTypeString, true)
+        )
+        for (authority in conf.authorities){
+            if (authority.authorityURL != conf.defaultAuthority.authorityURL) {
+                authorities.add(B2CAuthority(authority.authorityURL.toString(),
+                    authority.authorityTypeString, false))
+            }
+        }
+
+        var accountMode: String = "MULTIPLE" //default value if not set
+        if (conf.accountMode != null)
+            accountMode = conf.accountMode.toString()
+
+        return B2CConfigurationAndroid(conf.clientId, conf.redirectUri,
+                    accountMode, conf.useBroker, authorities, defaultScopes)
     }
 
     /**
@@ -235,7 +266,7 @@ class B2CProvider(
     /**
      * Load signed-in accounts, if there's any.
      */
-    private fun loadAccounts(source: String) {
+    private fun loadAccounts(tag: String, source: String) {
         if (b2cApp == null) {
             return
         }
@@ -244,11 +275,11 @@ class B2CProvider(
                 synchronized(this){
                     users = B2CUser.getB2CUsersFromAccountList(result)
                 }
-                operationListener.onEvent(B2COperationResult(TAG, source, B2COperationState.SUCCESS))
+                operationListener.onEvent(B2COperationResult(tag, source, B2COperationState.SUCCESS))
             }
 
             override fun onError(exception: MsalException) {
-                operationListener.onEvent(B2COperationResult(TAG, source, B2COperationState.CLIENT_ERROR))
+                operationListener.onEvent(B2COperationResult(tag, source, B2COperationState.CLIENT_ERROR))
             }
         })
     }
@@ -258,11 +289,11 @@ class B2CProvider(
      * If succeeds we use the access token to call the Microsoft Graph.
      * Does not check cache.
      */
-    private val authInteractiveCallback: AuthenticationCallback
-        private get() = object : AuthenticationCallback {
+    private fun authInteractiveCallback(tag: String): AuthenticationCallback {
+        return object : AuthenticationCallback {
             override fun onSuccess(authenticationResult: IAuthenticationResult) {
                 /* Successfully got a token, use it to call a protected resource - MSGraph */
-                Log.d(TAG, "Successfully authenticated")
+                Log.d("B2CProvider", "[$tag] Successfully authenticated")
 
                 /* Stores in memory the access token. Note: refresh token managed by MSAL */
                 var subject = B2CUser.getSubjectFromAccount(authenticationResult.account)
@@ -272,22 +303,25 @@ class B2CProvider(
                 }
 
                 /* Reload account asynchronously to get the up-to-date list. */
-                loadAccounts(POLICY_TRIGGER_INTERACTIVE)
+                loadAccounts(tag, POLICY_TRIGGER_INTERACTIVE)
             }
 
             override fun onError(exception: MsalException) {
                 if (exception.message!!.contains(B2C_PASSWORD_CHANGE)) {
-                    operationListener.onEvent(B2COperationResult(TAG, POLICY_TRIGGER_INTERACTIVE,
-                        B2COperationState.PASSWORD_RESET))
-                }
-                else {
+                    operationListener.onEvent(
+                        B2COperationResult(
+                            tag, POLICY_TRIGGER_INTERACTIVE,
+                            B2COperationState.PASSWORD_RESET
+                        )
+                    )
+                } else {
                     /* Failed to acquireToken */
-                    Log.d(TAG, "Authentication failed: $exception")
+                    Log.d("B2CProvider", "[$tag] Authentication failed: $exception")
                     if (exception is MsalClientException) {
                         /* Exception inside MSAL, more info inside MsalError.java */
                         operationListener.onEvent(
                             B2COperationResult(
-                                TAG, POLICY_TRIGGER_INTERACTIVE,
+                                tag, POLICY_TRIGGER_INTERACTIVE,
                                 B2COperationState.CLIENT_ERROR
                             )
                         )
@@ -296,7 +330,7 @@ class B2CProvider(
                         /* Exception when communicating with the STS, likely config issue */
                         operationListener.onEvent(
                             B2COperationResult(
-                                TAG, POLICY_TRIGGER_INTERACTIVE,
+                                tag, POLICY_TRIGGER_INTERACTIVE,
                                 B2COperationState.SERVICE_ERROR
                             )
                         )
@@ -306,20 +340,25 @@ class B2CProvider(
 
             override fun onCancel() {
                 /* User canceled the authentication */
-                Log.d(TAG, "User cancelled login.")
-                operationListener.onEvent(B2COperationResult(TAG, POLICY_TRIGGER_INTERACTIVE,
-                    B2COperationState.USER_CANCELLED_OPERATION))
+                Log.d("B2CProvider", "[$tag] User cancelled login.")
+                operationListener.onEvent(
+                    B2COperationResult(
+                        tag, POLICY_TRIGGER_INTERACTIVE,
+                        B2COperationState.USER_CANCELLED_OPERATION
+                    )
+                )
             }
         }
+    }
 
     /**
      * Callback used in for silent acquireToken calls.
      */
-    private val authSilentCallback: SilentAuthenticationCallback
-        private get() = object : SilentAuthenticationCallback {
+    private fun authSilentCallback(tag: String): SilentAuthenticationCallback {
+        return object : SilentAuthenticationCallback {
             override fun onSuccess(authenticationResult: IAuthenticationResult) {
                 /* Successfully got a token. */
-                Log.d(TAG, "Successfully authenticated")
+                Log.d("B2CProvider", "[$tag] Successfully authenticated")
 
                 /* Stores in memory the access token. Note: refresh token managed by MSAL */
                 var subject = B2CUser.getSubjectFromAccount(authenticationResult.account)
@@ -329,35 +368,52 @@ class B2CProvider(
                 }
 
                 /* Signal operation completed */
-                operationListener.onEvent(B2COperationResult(TAG, POLICY_TRIGGER_SILENTLY,
-                    B2COperationState.SUCCESS))
+                operationListener.onEvent(
+                    B2COperationResult(
+                        tag, POLICY_TRIGGER_SILENTLY,
+                        B2COperationState.SUCCESS
+                    )
+                )
 
             }
 
             override fun onError(exception: MsalException) {
                 /* Failed to acquireToken */
-                Log.d(TAG, "Authentication failed: $exception")
+                Log.d("B2CProvider", "[$tag] Authentication failed: $exception")
                 if (exception is MsalClientException) {
                     /* Exception inside MSAL, more info inside MsalError.java */
-                    operationListener.onEvent(B2COperationResult(TAG, POLICY_TRIGGER_SILENTLY,
-                        B2COperationState.CLIENT_ERROR))
+                    operationListener.onEvent(
+                        B2COperationResult(
+                            tag, POLICY_TRIGGER_SILENTLY,
+                            B2COperationState.CLIENT_ERROR
+                        )
+                    )
                 } else if (exception is MsalServiceException) {
                     /* Exception when communicating with the STS, likely config issue */
-                    operationListener.onEvent(B2COperationResult(TAG, POLICY_TRIGGER_SILENTLY,
-                        B2COperationState.SERVICE_ERROR))
+                    operationListener.onEvent(
+                        B2COperationResult(
+                            tag, POLICY_TRIGGER_SILENTLY,
+                            B2COperationState.SERVICE_ERROR
+                        )
+                    )
                 } else if (exception is MsalUiRequiredException) {
                     /* Tokens expired or no session, retry with interactive */
-                    operationListener.onEvent(B2COperationResult(TAG, POLICY_TRIGGER_SILENTLY,
-                        B2COperationState.USER_INTERACTION_REQUIRED))
+                    operationListener.onEvent(
+                        B2COperationResult(
+                            tag, POLICY_TRIGGER_SILENTLY,
+                            B2COperationState.USER_INTERACTION_REQUIRED
+                        )
+                    )
                 }
             }
         }
 
-    private fun setHostAndTenantFromAuthority(authority: Authority) {
+    }
+    private fun setHostAndTenantFromAuthority(tag: String, authority: Authority) {
         var parts = authority.authorityURL.toString().split(Regex("https://|/"))
         hostName = parts[1]
         tenantName = parts[2]
-        Log.d(TAG, "host: $hostName, tenant: $tenantName")
+        Log.d("B2CProvider", "[$tag] host: $hostName, tenant: $tenantName")
     }
 
     private fun getAuthorityFromPolicyName(policyName: String) : String{

@@ -1,16 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-// In order to *not* need this ignore, consider extracting the "web" version
-// of your plugin as a separate package, instead of inlining it in the same
-// package as the core of your plugin.
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html show window;
-
 import 'package:flutter/services.dart';
-import 'package:flutter_azure_b2c/B2CConfiguration.dart';
 import 'package:flutter_azure_b2c/web/B2CProviderWeb.dart';
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
-import 'package:msal_js/msal_js.dart';
 
 import 'B2COperationResult.dart';
 
@@ -20,7 +12,7 @@ class B2CPluginWeb {
   static late final MethodChannel _channel;
 
   B2CPluginWeb() {
-    _provider = B2CProviderWeb("", callback: _pluginListener);
+    _provider = B2CProviderWeb(callback: _pluginListener);
   }
 
   static void registerWith(Registrar registrar) {
@@ -45,16 +37,18 @@ class B2CPluginWeb {
       case 'init':
         var args = call.arguments;
 
+        String tag = args["tag"];
         String configFileName = args["configFile"];
         if (!configFileName.toLowerCase().endsWith(".json"))
           configFileName = configFileName + ".json";
 
-        _provider.init(configFileName);
-        return "B2C_PLUGIN_DEFAULT";
+        _provider.init(tag, configFileName);
+        return;
 
       case 'policyTriggerInteractive':
         var args = call.arguments;
 
+        String tag = args["tag"];
         String policyName = args["policyName"];
         List<String> scopes = <String>[];
         for (var oScope in args["scopes"]) scopes.add(oScope);
@@ -63,28 +57,33 @@ class B2CPluginWeb {
         if (args.containsKey("loginHint")) {
           loginHint = args["loginHint"];
         }
-        await _provider.policyTriggerInteractive(policyName, scopes, loginHint);
+        await _provider.policyTriggerInteractive(
+            tag, policyName, scopes, loginHint);
 
-        return "B2C_PLUGIN_DEFAULT";
+        return;
 
       case 'policyTriggerSilently':
         var args = call.arguments;
+
+        String tag = args["tag"];
         String subject = args["subject"];
         String policyName = args["policyName"];
         List<String> scopes = <String>[];
         for (var oScope in args["scopes"]) scopes.add(oScope);
 
-        await _provider.policyTriggerSilently(subject, policyName, scopes);
+        await _provider.policyTriggerSilently(tag, subject, policyName, scopes);
 
-        return "B2C_PLUGIN_DEFAULT";
+        return;
 
       case 'signOut':
         var args = call.arguments;
+
+        String tag = args["tag"];
         String subject = args["subject"];
 
-        await _provider.signOut(subject);
+        await _provider.signOut(tag, subject);
 
-        return "B2C_PLUGIN_DEFAULT";
+        return;
 
       case 'getSubjects':
         var res = _provider.getSubjects();
@@ -108,7 +107,7 @@ class B2CPluginWeb {
         if (res != null) {
           return json.encode(res);
         }
-        throw Exception("Subject not exists");
+        throw Exception("Subject or AccessToken not exists");
 
       case 'getConfiguration':
         var res = _provider.getConfiguration();
@@ -119,7 +118,8 @@ class B2CPluginWeb {
       default:
         throw PlatformException(
           code: 'Unimplemented',
-          details: 'msal_auth for web doesn\'t implement \'${call.method}\'',
+          details:
+              'flutter_azure_b2c for web doesn\'t implement \'${call.method}\'',
         );
     }
   }

@@ -4,6 +4,10 @@ import android.content.Context
 import androidx.annotation.NonNull
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import java.io.InputStreamReader
+import java.io.Reader
+import java.io.StringWriter
+import java.io.Writer
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -50,7 +54,25 @@ class PluginUtilities
         @JvmStatic
         fun toIsoFormat(@NonNull date: Date): String {
             var outputFormatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
-            return outputFormatter.format(date);
+            return outputFormatter.format(date)
+        }
+
+        @JvmStatic
+        fun readRawString(context: Context, configFileId: Int, encoding: String = "UTF-8"): String {
+            var resource = context.resources.openRawResource(configFileId)
+            val writer: Writer = StringWriter()
+            val buffer = CharArray(1024)
+            try {
+                val reader: Reader = InputStreamReader(resource, encoding).buffered()
+                var n: Int
+                while (reader.read(buffer).also { n = it } != -1) {
+                    writer.write(buffer, 0, n)
+                }
+            } finally {
+                resource.close()
+            }
+
+            return writer.toString()
         }
 
     }

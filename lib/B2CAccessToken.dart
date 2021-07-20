@@ -8,12 +8,12 @@ class B2CAccessToken {
   B2CAccessToken.fromJson(Map<String, dynamic> data) {
     this.subject = data["subject"];
     this.token = data["token"];
-    this.expireOn = DateTime.parse(data["expireOn"]);
+    this.expireOn = DateTime.parse(data["expire"]).toUtc();
   }
 
   Map toJson() => {
         "subject": subject,
         "token": token,
-        "expireOn": expireOn.toIso8601String()
+        "expire": expireOn.toIso8601String()
       };
 }

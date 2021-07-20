@@ -2,8 +2,11 @@ package com.nodriver.flutter_azure_b2c
 
 import android.app.Activity
 import android.content.Context
+import android.util.Log
 import androidx.annotation.NonNull
+import com.google.gson.FieldNamingPolicy
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.microsoft.identity.client.*
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
@@ -24,13 +27,14 @@ class B2CPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
     private lateinit var context: Context
     private lateinit var activity: Activity
     private lateinit var provider: B2CProvider
-    private val json = Gson()
+    private val json = GsonBuilder()
+            .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create()
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "flutter_azure_b2c")
         channel.setMethodCallHandler(this)
         context = flutterPluginBinding.applicationContext
-        provider = B2CProvider("B2C_PLUGIN_DEFAULT", pluginListener)
+        provider = B2CProvider(pluginListener)
     }
 
     override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
@@ -39,25 +43,28 @@ class B2CPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
         }
         else if (call.method == "init"){
             var args = call.arguments as Map<String, Any>
+            var tag = args["tag"] as String
             var configFile = args["configFile"] as String
 
-            provider.init(context, configFile)
-            result.success("B2C_PLUGIN_DEFAULT");
+            provider.init(context, tag, configFile)
+            result.success(null);
         }
         else if (call.method == "policyTriggerInteractive"){
             var args = call.arguments as Map<String, Any>
+            var tag = args["tag"] as String
             var policyName = args["policyName"] as String
             var scopes = args["scopes"] as List<String>
             var loginHint : String? = null
-            if (args.containsKey("loginHint")) {
+            if (args.containsKey("loginHint") && args["loginHint"] != null) {
                 loginHint = args["loginHint"] as String
             }
 
-            provider.policyTriggerInteractive(context, activity, policyName, scopes, loginHint)
-            result.success("B2C_PLUGIN_DEFAULT")
+            provider.policyTriggerInteractive(context, activity, tag, policyName, scopes, loginHint)
+            result.success(null)
         }
         else if (call.method == "policyTriggerSilently") {
             var args = call.arguments as Map<String, Any>
+            var tag = args["tag"] as String
             var subject = args["subject"] as String
             var policyName = args["policyName"] as String
             var scopes = args["scopes"] as List<String>
@@ -67,28 +74,29 @@ class B2CPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
                     "Unable to find stored user: $subject", null)
             else
             {
-                provider.policyTriggerSilently(subject, policyName, scopes)
-                result.success("B2C_PLUGIN_DEFAULT")
+                provider.policyTriggerSilently(tag, subject, policyName, scopes)
+                result.success(null)
             }
         }
         else if (call.method == "signOut") {
             var args = call.arguments as Map<String, Any>
+            var tag = args["tag"] as String
             var subject = args["subject"] as String
 
             if (!provider.hasSubject(subject))
                 result.error("SubjectNotExist",
                     "Unable to find stored user: $subject", null)
             else {
-                provider.signOut(subject)
-                result.success("B2C_PLUGIN_DEFAULT")
+                provider.signOut(tag, subject)
+                result.success(null)
             }
         }
         else if (call.method == "getConfiguration") {
 
-            var configuration: PublicClientApplicationConfiguration
+            var configuration: B2CConfigurationAndroid
                 = provider.getConfiguration()
-
-            result.success(json.toJson(configuration))
+            var toRet = json.toJson(configuration)
+            result.success(toRet)
         }
         else if (call.method == "getSubjects") {
             var subjects = provider.getSubjects()
@@ -135,7 +143,7 @@ class B2CPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
                 result.success(json.toJson(mapOf(
                     "subject" to subject,
                     "token" to accessToken,
-                    "expireOn" to PluginUtilities.toIsoFormat(expireDate!!)
+                    "expire" to PluginUtilities.toIsoFormat(expireDate!!)
                 )))
         }
         else {
@@ -155,8 +163,12 @@ class B2CPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
 //                    "source" to operationResult.source,
 //                    "reason" to operationResult.reason.toString()
 //                )
-                var result: Map<String, Any> = operationResult.serializeToMap()
-                channel.invokeMethod("onEvent", result)
+                channel.invokeMethod("onEvent", json.toJson(mapOf(
+                    "tag" to operationResult.tag,
+                    "source" to operationResult.source,
+                    "reason" to operationResult.reason,
+                    "data" to operationResult.data
+                )))
             }
         }
 

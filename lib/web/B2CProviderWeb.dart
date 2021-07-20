@@ -26,7 +26,6 @@ class B2CProviderWeb {
 
   static String? _lastHash;
 
-  String tag;
   B2CCallback? callback;
 
   static const String _B2C_PASSWORD_CHANGE = "AADB2C90118";
@@ -35,9 +34,9 @@ class B2CProviderWeb {
 
   static final DateFormat _format = DateFormat("E MMM dd yyyy HH:mm:ss Z");
 
-  B2CProviderWeb(this.tag, {this.callback});
+  B2CProviderWeb({this.callback});
 
-  Future init(String configFileName) async {
+  Future init(String tag, String configFileName) async {
     try {
       var conf = json.decode(await rootBundle.loadString(configFileName));
 
@@ -137,8 +136,8 @@ class B2CProviderWeb {
     }
   }
 
-  Future policyTriggerInteractive(
-      String policyName, List<String> scopes, String? loginHint) async {
+  Future policyTriggerInteractive(String tag, String policyName,
+      List<String> scopes, String? loginHint) async {
     try {
       if (_interactionMode == B2CInteractionMode.REDIRECT) {
         await _b2cApp!.acquireTokenRedirect(RedirectRequest()
@@ -198,8 +197,8 @@ class B2CProviderWeb {
     }
   }
 
-  Future policyTriggerSilently(
-      String subject, String policyName, List<String> scopes) async {
+  Future policyTriggerSilently(String tag, String subject, String policyName,
+      List<String> scopes) async {
     try {
       var user = _users[subject];
       if (user == null) {
@@ -243,7 +242,7 @@ class B2CProviderWeb {
     }
   }
 
-  Future signOut(String subject) async {
+  Future signOut(String tag, String subject) async {
     try {
       var user = _users[subject];
       if (user == null) {
@@ -316,7 +315,7 @@ class B2CProviderWeb {
 
   B2CAccessToken _accessTokenFromAuthResult(AuthenticationResult result) {
     return B2CAccessToken(result.uniqueId, result.accessToken,
-        _format.parse(result.expiresOn.toString()));
+        _format.parse(result.expiresOn.toString()).toUtc());
   }
 
   void _loadAllAccounts() {

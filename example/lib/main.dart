@@ -61,7 +61,7 @@ class _MyAppState extends State<MyApp> {
                           ,
                           null);
                       setState(() {
-                        _retdata = data!;
+                        _retdata = data;
                       });
                     },
                     child: Text("LogIn")),
@@ -95,7 +95,7 @@ class _MyAppState extends State<MyApp> {
                           _configuration!.defaultScopes!,
                           _subjects![0]);
                       setState(() {
-                        _retdata = data!;
+                        _retdata = data;
                       });
                     },
                     child: Text("Refresh")),
@@ -103,7 +103,7 @@ class _MyAppState extends State<MyApp> {
                     onPressed: () async {
                       var data = await AzureB2C.signOut(_subjects![0]);
                       setState(() {
-                        _retdata = data!;
+                        _retdata = data;
                       });
                     },
                     child: Text("LogOut")),
