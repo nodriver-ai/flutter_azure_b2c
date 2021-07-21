@@ -1,10 +1,7 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'dart:async';
 
-import 'package:flutter/services.dart';
 import 'package:flutter_azure_b2c/flutter_azure_b2c.dart';
 import 'package:flutter_azure_b2c/B2COperationResult.dart';
 import 'package:flutter_azure_b2c/B2CConfiguration.dart';
@@ -27,12 +24,11 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     AzureB2C.registerCallback(B2COperationSource.INIT, (result) async {
-      if (result == B2COperationState.SUCCESS) {
+      if (result.reason == B2COperationState.SUCCESS) {
         _configuration = await AzureB2C.getConfiguration();
       }
     });
-    AzureB2C.handleRedirectFuture()
-        .then((value) => AzureB2C.init("auth_config"));
+    AzureB2C.handleRedirectFuture().then((_) => AzureB2C.init("auth_config"));
   }
 
   @override
@@ -68,7 +64,7 @@ class _MyAppState extends State<MyApp> {
                 TextButton(
                     onPressed: () async {
                       var subjects = await AzureB2C.getSubjects();
-                      var info = await AzureB2C.getB2CUserInfo(subjects![0]);
+                      var info = await AzureB2C.getUserInfo(subjects![0]);
                       setState(() {
                         _subjects = subjects;
                         _retdata = json.encode(info);
@@ -81,8 +77,7 @@ class _MyAppState extends State<MyApp> {
               children: [
                 TextButton(
                     onPressed: () async {
-                      var token =
-                          await AzureB2C.getB2CAccessToken(_subjects![0]);
+                      var token = await AzureB2C.getAccessToken(_subjects![0]);
                       setState(() {
                         _retdata = json.encode(token);
                       });
@@ -91,9 +86,10 @@ class _MyAppState extends State<MyApp> {
                 TextButton(
                     onPressed: () async {
                       var data = await AzureB2C.policyTriggerSilently(
-                          _configuration!.defaultAuthority.policyName,
-                          _configuration!.defaultScopes!,
-                          _subjects![0]);
+                        _subjects![0],
+                        _configuration!.defaultAuthority.policyName,
+                        _configuration!.defaultScopes!,
+                      );
                       setState(() {
                         _retdata = data;
                       });

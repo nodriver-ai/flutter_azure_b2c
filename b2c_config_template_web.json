@@ -1,0 +1,20 @@
+{
+  "client_id" : "<application (client) id>",
+  "redirect_uri" : "<your app domain>",
+  "cache_location": "<localStorage|sessionStorage>",
+  "interaction_mode": "<popup|redirect>",
+  "authorities": [
+    {
+      "type": "B2C",
+      "authority_url": "https://<youractivedirectoryname>.b2clogin.com/<youractivedirectoryname>.onmicrosoft.com/<sign_in_up_policy_name>/",
+      "default": true
+    },
+    {
+      "type": "B2C",
+      "authority_url": "https://<youractivedirectoryname>.b2clogin.com/<youractivedirectoryname>.onmicrosoft.com/<other_policy e.g. reset_pass>/"
+    }
+  ],
+  "default_scopes": [
+    "https://<youractivedirectoryname>.onmicrosoft.com/<application (server) id>/<API name>"
+  ]
+}
