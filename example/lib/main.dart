@@ -23,11 +23,18 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
+
+    // It is possible to register callbacks in order to handle return values
+    // from asynchronous calls to the plugin
     AzureB2C.registerCallback(B2COperationSource.INIT, (result) async {
       if (result.reason == B2COperationState.SUCCESS) {
         _configuration = await AzureB2C.getConfiguration();
       }
     });
+
+    // Important: Remeber to handle redirect states (if you want to support
+    // the web platform with redirect method) and init the AzureB2C plugin
+    // before the material app starts.
     AzureB2C.handleRedirectFuture().then((_) => AzureB2C.init("auth_config"));
   }
 
@@ -46,15 +53,12 @@ class _MyAppState extends State<MyApp> {
               children: [
                 TextButton(
                     onPressed: () async {
+                      // you can just perform calls to the AzureB2C plugin to
+                      // handle the B2C protocol (e.g. acquire, refresh tokens
+                      // or sign out).
                       var data = await AzureB2C.policyTriggerInteractive(
                           _configuration!.defaultAuthority.policyName,
-                          _configuration!.defaultScopes!
-                          // <String>[
-                          //   //you may ask user scopes here e.g.
-                          //   //https://<hostname>/<server:client_id>/<scope_name>
-                          //   "https://nodriverservices.onmicrosoft.com/9c26e9a7-4bcf-4fb0-9582-3552a70219fe/Irreo.APIv2.Access"
-                          // ]
-                          ,
+                          _configuration!.defaultScopes!,
                           null);
                       setState(() {
                         _retdata = data;

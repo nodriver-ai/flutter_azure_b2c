@@ -40,7 +40,7 @@ typedef AzureB2CCallback = Future<void> Function(B2COperationResult);
 ///
 /// This static class permits to:
 ///   * Init a proper AzureB2C provider using a native MSAL implementation.
-///   * Trigger, interactively and silently, B2C policies (user-flows) (e.g.
+///   * Trigger, interactively or silently, B2C policies (user-flows) (e.g.
 ///   sing-up/sing-in users, reset password, or modify information)
 ///   * Sign-out users (i.e. erases completelly associated user's information,
 ///   id-token, ecc).
