@@ -5,7 +5,7 @@ This library is based on native implementation of MSAL for each taget platform
 and aims to provide a common interface to easily manage Azure AD B2C authentication
 process for flutter developer.
 
-There is a common interface that permits to handle the authentication and autorization
+There is a common interface that permits to handle the authentication and authorization
 process and it is entirely designed to work with the Azure B2C service. For each platform
 is then implemented a B2CProvider that permits to adapt the common interface to the selected
 device.
@@ -82,7 +82,7 @@ See https://docs.microsoft.com/en-us/azure/active-directory/develop/tutorial-v2-
 
 ### Web
 
-* Add CDN dependecy in your index.html file:
+* Add a CDN dependecy in your index.html file:
 ```html
   <script type="text/javascript" src="https://alcdn.msauth.net/browser/<MSAL_VERSION>/js/msal-browser.min.js"></script>
 ```
