@@ -1,7 +1,7 @@
 # flutter_azure_b2c
 
 A flutter library to handle the Azure B2C authentication protocol.
-This library is based on native implementation of MSAL for each taget platform
+This library is based on native implementation of MSAL for each target platform
 and aims to provide a common interface to easily manage Azure AD B2C authentication
 process for flutter developer.
 

@@ -1,5 +1,5 @@
 name: flutter_azure_b2c
-description: Azure AD B2C client library
+description: A flutter library to handle the Azure B2C authentication protocol
 version: 0.0.1
 homepage: "https://github.com/nodriver-ai/flutter_azure_b2c"
 
