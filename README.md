@@ -14,7 +14,7 @@ device.
 Aim of this library is NOT to replicate the entire MSAL library in flutter and never
 will be. The entire capabilities of MSAL are not exposed. Furthermore, the library is
 not designed to work with any OAuth2 or OpenID provider. It may work or may not but it
-is not guarantieed. 
+is not guaranteed. 
 
 Actual limitation:
 * Some platform still miss an implementation as there are out of our business scope
