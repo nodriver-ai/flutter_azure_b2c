@@ -290,14 +290,20 @@ class AzureB2C {
   /// Returns a [Future] containing a [List] of stored subjects.
   ///
   static Future<List<String>?> getSubjects() async {
-    final Map<String, dynamic>? res =
-        json.decode(await _channel.invokeMethod('getSubjects'));
-    print(res);
-    if (res != null && res.containsKey("subjects")) {
-      var subjects = res["subjects"];
-      var toRet = <String>[];
-      for (var dSub in subjects) toRet.add(dSub);
-      return toRet;
+    print("[AzureB2C] [getSubjects] invoked...");
+
+    var rawRes = await _channel.invokeMethod('getSubjects');
+
+    if (rawRes != null) {
+      final Map<String, dynamic>? res = json.decode(rawRes);
+      print("[AzureB2C] [getSubjects] data: $res");
+
+      if (res!.containsKey("subjects")) {
+        var subjects = res["subjects"];
+        var toRet = <String>[];
+        for (var dSub in subjects) toRet.add(dSub);
+        return toRet;
+      }
     }
     return null;
   }
@@ -311,13 +317,16 @@ class AzureB2C {
   ///   * [B2CUserInfo]
   ///
   static Future<B2CUserInfo?> getUserInfo(String subject) async {
+    print("[AzureB2C] [getUserInfo] invoked...");
+
     var args = {"subject": subject};
-    final Map<String, dynamic>? res =
-        json.decode(await _channel.invokeMethod('getSubjectInfo', args));
-    print(res);
-    if (res != null)
-      return B2CUserInfo.fromJson(subject, res);
-    else
+    var rawRes = await _channel.invokeMethod('getSubjectInfo', args);
+
+    if (rawRes != null) {
+      final Map<String, dynamic>? res = json.decode(rawRes);
+      print("[AzureB2C] [getUserInfo] data: $res");
+      return B2CUserInfo.fromJson(subject, res!);
+    } else
       return null;
   }
 
@@ -332,11 +341,12 @@ class AzureB2C {
   static Future<B2CAccessToken?> getAccessToken(String subject) async {
     print("[AzureB2C] [getB2CAccessToken] invoked...");
     var args = {"subject": subject};
-    final Map<String, dynamic>? res =
-        json.decode(await _channel.invokeMethod('getAccessToken', args));
-    if (res != null) {
+    var rawRes = await _channel.invokeMethod('getAccessToken', args);
+
+    if (rawRes != null) {
+      final Map<String, dynamic>? res = json.decode(rawRes);
       print("[AzureB2C] [getB2CAccessToken] data: $res");
-      return B2CAccessToken.fromJson(res);
+      return B2CAccessToken.fromJson(res!);
     } else
       return null;
   }
@@ -352,11 +362,11 @@ class AzureB2C {
   ///
   static Future<B2CConfiguration?> getConfiguration() async {
     print("[AzureB2C] [getConfiguration] invoked...");
-    final Map<String, dynamic>? res =
-        json.decode(await _channel.invokeMethod('getConfiguration'));
-    if (res != null) {
+    var rawRes = await _channel.invokeMethod('getConfiguration');
+    if (rawRes != null) {
+      final Map<String, dynamic>? res = json.decode(rawRes);
       print("[AzureB2C] [getConfiguration] data: $res");
-      return B2CConfiguration.fromJson(res);
+      return B2CConfiguration.fromJson(res!);
     } else
       return null;
   }
