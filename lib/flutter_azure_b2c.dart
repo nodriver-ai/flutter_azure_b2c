@@ -53,7 +53,7 @@ class AzureB2C {
     B2COperationSource.INIT: <AzureB2CCallback>[],
     B2COperationSource.POLICY_TRIGGER_INTERACTIVE: <AzureB2CCallback>[],
     B2COperationSource.POLICY_TRIGGER_SILENTLY: <AzureB2CCallback>[],
-    B2COperationSource.SING_OUT: <AzureB2CCallback>[],
+    B2COperationSource.SIGN_OUT: <AzureB2CCallback>[],
   };
 
   /// Register a callback to manage result of [AzureB2C] asynchronous
@@ -268,7 +268,7 @@ class AzureB2C {
   /// return a [B2COperationResult] in which the source [tag] is indicated.
   ///
   /// The result of the method call is returned asynchronously to any
-  /// [AzureB2CCallback] registered to the [B2COperationSource.SING_OUT] topic.
+  /// [AzureB2CCallback] registered to the [B2COperationSource.SIGN_OUT] topic.
   ///
   /// Possible operation states are:
   ///   * [B2COperationState.SUCCESS] if successful (some platform may reload

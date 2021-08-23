@@ -50,7 +50,7 @@ class B2CProvider(
         const val INIT = "init"
         const val POLICY_TRIGGER_SILENTLY = "policy_trigger_silently"
         const val POLICY_TRIGGER_INTERACTIVE = "policy_trigger_interactive"
-        const val SING_OUT = "sign_out"
+        const val SIGN_OUT = "sign_out"
     }
 
 
@@ -168,7 +168,7 @@ class B2CProvider(
         selectedUser!!.signOutAsync(b2cApp!!,
             object : IMultipleAccountPublicClientApplication.RemoveAccountCallback {
                 override fun onRemoved() {
-                    loadAccounts(tag, SING_OUT)
+                    loadAccounts(tag, SIGN_OUT)
                     synchronized(authResults) {
                         authResults.remove(subject);
                     }
@@ -176,7 +176,7 @@ class B2CProvider(
 
                 override fun onError(exception: MsalException) {
                     Log.d("B2CProvider", "[$tag] Sign Out error: $exception")
-                    operationListener.onEvent(B2COperationResult(tag, SING_OUT, B2COperationState.CLIENT_ERROR))
+                    operationListener.onEvent(B2COperationResult(tag, SIGN_OUT, B2COperationState.CLIENT_ERROR))
                 }
             })
     }

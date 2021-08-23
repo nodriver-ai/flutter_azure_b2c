@@ -1,3 +1,7 @@
+## 0.0.3
+Minor fixes:
+* Mispelled enum for sign_out callback
+
 ## 0.0.2
 Minor fixes:
 * AzureB2C getters now check if value returned from channel is null

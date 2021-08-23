@@ -372,7 +372,7 @@ class B2CProviderWeb {
   ///
   /// Returns a [Future] callable from the [AzureB2C] plugin.
   ///
-  /// It emits a [B2COperationResult] from [B2COperationSource.SING_OUT] with
+  /// It emits a [B2COperationResult] from [B2COperationSource.SIGN_OUT] with
   /// possible results:
   ///   * [B2COperationState.SUCCESS] if successful (only in
   ///   [B2CInteractionMode.POPUP] mode or it will reload the app if in
@@ -398,11 +398,11 @@ class B2CProviderWeb {
 
         _users.remove(_getUniqueId(user));
         _emitCallback(B2COperationResult(
-            tag, B2COperationSource.SING_OUT, B2COperationState.SUCCESS));
+            tag, B2COperationSource.SIGN_OUT, B2COperationState.SUCCESS));
       }
     } on AuthException {
       _emitCallback(B2COperationResult(
-          tag, B2COperationSource.SING_OUT, B2COperationState.CLIENT_ERROR));
+          tag, B2COperationSource.SIGN_OUT, B2COperationState.CLIENT_ERROR));
     }
   }
 

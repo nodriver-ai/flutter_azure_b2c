@@ -34,7 +34,7 @@ enum B2COperationSource {
   INIT,
   POLICY_TRIGGER_SILENTLY,
   POLICY_TRIGGER_INTERACTIVE,
-  SING_OUT
+  SIGN_OUT
 }
 
 /// Operation result used in [AzureB2C] callbacks.
@@ -80,8 +80,8 @@ class B2COperationResult {
       case "POLICY_TRIGGER_INTERACTIVE":
         this.source = B2COperationSource.POLICY_TRIGGER_INTERACTIVE;
         break;
-      case "SING_OUT":
-        this.source = B2COperationSource.SING_OUT;
+      case "SIGN_OUT":
+        this.source = B2COperationSource.SIGN_OUT;
         break;
     }
     switch ((data["reason"]! as String).toUpperCase()) {
