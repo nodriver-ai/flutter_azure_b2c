@@ -27,6 +27,7 @@ import 'package:flutter_azure_b2c/B2CConfiguration.dart';
 import 'package:flutter_azure_b2c/B2COperationResult.dart';
 import 'package:flutter_azure_b2c/B2CUserInfo.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:msal_js/msal_js.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
@@ -89,6 +90,9 @@ class B2CProviderWeb {
   ///   requested a password change.
   ///
   Future init(String tag, String configFileName) async {
+
+    initializeDateFormatting();
+
     try {
       var conf = json.decode(await rootBundle.loadString(configFileName));
 
