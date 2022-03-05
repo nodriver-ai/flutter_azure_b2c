@@ -1,3 +1,7 @@
+## 0.0.4
+Bug fix:
+* Resolved access token expireOn deserialization when locale was not en_US
+
 ## 0.0.3
 Minor fixes:
 * Mispelled enum for sign_out callback
