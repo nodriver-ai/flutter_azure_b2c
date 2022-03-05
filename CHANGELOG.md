@@ -1,3 +1,7 @@
+## 0.0.5
+Bug fix:
+* Resolved access token expireOn deserialization when locale was not en_US (same)
+
 ## 0.0.4
 Bug fix:
 * Resolved access token expireOn deserialization when locale was not en_US

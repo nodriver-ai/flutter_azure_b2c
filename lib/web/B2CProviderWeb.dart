@@ -61,7 +61,7 @@ class B2CProviderWeb {
   static const String _B2C_USER_CANCELLED = "user_cancelled";
   static const String _B2C_PLUGIN_LAST_ACCESS = "b2c_plugin_last_access";
 
-  static final DateFormat _format = DateFormat("E MMM dd yyyy HH:mm:ss Z");
+  static final DateFormat _format = DateFormat("E MMM dd yyyy HH:mm:ss Z", "en_US");
 
   /// Creates an istance of the B2CProviderWeb.
   ///
