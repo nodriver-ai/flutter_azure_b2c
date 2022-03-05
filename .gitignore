@@ -3,8 +3,6 @@
 
 .packages
 .pub/
-.vscode/
-.vscode/launch.json
 
 
 build/
