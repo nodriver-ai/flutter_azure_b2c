@@ -481,6 +481,24 @@ class B2CProviderWeb {
   ///   * [AzureB2C] plugin
   static void storeRedirectHash() {
     _lastHash = window.location.hash;
+    if (_lastHash == "#/")
+    {
+      bool interactionWasStarted = false;
+      window.sessionStorage.forEach((key, value) {
+        //this happens when user click back button on redirect hash
+        if (key.startsWith("msal") && value == "interaction_in_progress")
+        {
+          interactionWasStarted = true;
+
+        }
+      });
+
+      if (interactionWasStarted) {
+        log("User pressed back button, cleaning", name: "B2CProviderWebStatic");
+        window.sessionStorage.removeWhere((key, value) => key.startsWith("msal"));
+      }
+    }
+
     log(_lastHash!, name: "B2CProviderWebStatic");
   }
 
@@ -503,6 +521,9 @@ class B2CProviderWeb {
   }
 
   void _emitCallback(B2COperationResult result) {
+    if (result.reason == B2COperationState.CLIENT_ERROR)
+      window.sessionStorage.removeWhere((key, value) => key.startsWith("msal"));
+
     if (callback != null) callback!(result);
   }
 

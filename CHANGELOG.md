@@ -1,3 +1,7 @@
+## 0.0.6
+Bug fix:
+* Web: solved issue when user click back button from policy interactive that prevented further policies to be called
+
 ## 0.0.5
 Bug fix:
 * Resolved access token expireOn deserialization when locale was not en_US (same)
