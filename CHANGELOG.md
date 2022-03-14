@@ -1,3 +1,8 @@
+## 0.0.7
+Bug fix:
+* Web: solved issue when using REDIRECT method and user clicks forgot password and either INIT and PASSWORD_RESET callbacks are
+triggered. Added session storage clean up before triggering PASSWORD_RESET callback to prevent interaction_in_progress MSAL error when calling the next authority.
+
 ## 0.0.6
 Bug fix:
 * Web: solved issue when user click back button from policy interactive that prevented further policies to be called

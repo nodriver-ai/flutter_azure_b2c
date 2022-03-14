@@ -163,10 +163,13 @@ class B2CProviderWeb {
 
       if (_lastHash != null && _lastHash != "#/") {
         if (_lastHash!.contains(_B2C_PASSWORD_CHANGE)) {
+          window.sessionStorage.removeWhere((key, value) => key.startsWith("msal"));
+
           _emitCallback(B2COperationResult(
               tag,
               B2COperationSource.POLICY_TRIGGER_INTERACTIVE,
               B2COperationState.PASSWORD_RESET));
+          return;
         } else {
           var result = await _b2cApp!.handleRedirectFuture(_lastHash);
           if (result != null) {
