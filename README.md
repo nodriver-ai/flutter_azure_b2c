@@ -18,8 +18,7 @@ is not guaranteed.
 
 Actual limitation:
 * Some platform still miss an implementation as there are out of our business scope
-at the moment. Maybe in the next months we will provide an implementation also for
-iOs but if you need it, contribute! ;)
+at the moment. All contributions are appreciated! ;)
 
 
 ## Installation
@@ -80,6 +79,33 @@ For more information see https://github.com/AzureAD/microsoft-authentication-lib
 ```
 See https://docs.microsoft.com/en-us/azure/active-directory/develop/tutorial-v2-android for information about how to configure your B2C application and generate <YOUR_BASE64_URL_ENCODED_PACKAGE_SIGNATURE>.
 
+### IOS
+
+* Prepare a JSON configuration file for AzureB2C initialization in <project root>/ios/Resources following this template:
+```json
+    {
+        "client_id" : "<application (client) id>",
+        "redirect_uri" : "msauth://<YOUR_PACKAGE_NAME>/<YOUR_BASE64_URL_ENCODED_PACKAGE_SIGNATURE>",
+        "account_mode" : "<MULTIPLE|SINGLE>",
+        "broker_redirect_uri_registered": false,
+        "authorities": [
+            {
+                "type": "B2C",
+                "authority_url": "https://<youractivedirectoryname>.b2clogin.com/<youractivedirectoryname>.onmicrosoft.com/<sign_in_up_policy_name>/",
+                "default": true
+            },
+            {
+                "type": "B2C",
+                "authority_url": "https://<youractivedirectoryname>.b2clogin.com/<youractivedirectoryname>.onmicrosoft.com/<other_policy e.g. reset_pass>/"
+            }
+        ],
+        "default_scopes": [
+            "https://<youractivedirectoryname>.onmicrosoft.com/<application (server) id>/<API name>"
+        ]
+    }
+```
+See https://github.com/AzureAD/microsoft-authentication-library-for-objc for information about how to configure your B2C application.
+
 ### Web
 
 * Add a CDN dependecy in your index.html file:
@@ -124,6 +150,8 @@ In <root>/example/lib/main.dart there is a simple demonstration app. In order to
 * Prepare a configuration file using previous templates:
     * Android: 
         * path: android/app/main/res/raw/
+    * IOS:
+        * path: ios/Resources/
     * Web:
         * path: web/assets/
 
@@ -131,6 +159,9 @@ In <root>/example/lib/main.dart there is a simple demonstration app. In order to
     * Android: 
         * flutter launch
         * choose an android emulator or device
+    * IOS: 
+        * flutter launch
+        * choose an ios emulator or device
     * Web:
         * flutter launch -d chrome --web-port <port>
         * Note: choose port number according to the redirect uri registered in the B2C app.
