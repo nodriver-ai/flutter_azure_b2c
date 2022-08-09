@@ -61,7 +61,8 @@ class B2CProviderWeb {
   static const String _B2C_USER_CANCELLED = "user_cancelled";
   static const String _B2C_PLUGIN_LAST_ACCESS = "b2c_plugin_last_access";
 
-  static final DateFormat _format = DateFormat("E MMM dd yyyy HH:mm:ss Z", "en_US");
+  static final DateFormat _format =
+      DateFormat("E MMM dd yyyy HH:mm:ss Z", "en_US");
 
   /// Creates an istance of the B2CProviderWeb.
   ///
@@ -90,7 +91,6 @@ class B2CProviderWeb {
   ///   requested a password change.
   ///
   Future init(String tag, String configFileName) async {
-
     initializeDateFormatting();
 
     try {
@@ -163,7 +163,8 @@ class B2CProviderWeb {
 
       if (_lastHash != null && _lastHash != "#/") {
         if (_lastHash!.contains(_B2C_PASSWORD_CHANGE)) {
-          window.sessionStorage.removeWhere((key, value) => key.startsWith("msal"));
+          window.sessionStorage
+              .removeWhere((key, value) => key.startsWith("msal"));
 
           _emitCallback(B2COperationResult(
               tag,
@@ -213,8 +214,9 @@ class B2CProviderWeb {
   ///
   /// Based on the specified field [<interaction_mode>: popup|redirect] in the
   /// configuration file, the policy will be triggered via redirect or with a
-  /// popup respectively if [B2CInteractionMode.REDIRECT] or [B2CInteractionMode.POPUP]
-  /// is selected. In [B2CInteractionMode.REDIRECT] mode the policy state hash
+  /// popup respectively if [B2CInteractionMode.REDIRECT] or
+  /// [B2CInteractionMode.POPUP] is selected.
+  /// In [B2CInteractionMode.REDIRECT] mode the policy state hash
   /// parameter must be intercepted during app startup as specified in the
   /// plugin implementation.
   ///
@@ -484,21 +486,19 @@ class B2CProviderWeb {
   ///   * [AzureB2C] plugin
   static void storeRedirectHash() {
     _lastHash = window.location.hash;
-    if (_lastHash == "#/")
-    {
+    if (_lastHash == "#/") {
       bool interactionWasStarted = false;
       window.sessionStorage.forEach((key, value) {
         //this happens when user click back button on redirect hash
-        if (key.startsWith("msal") && value == "interaction_in_progress")
-        {
+        if (key.startsWith("msal") && value == "interaction_in_progress") {
           interactionWasStarted = true;
-
         }
       });
 
       if (interactionWasStarted) {
         log("User pressed back button, cleaning", name: "B2CProviderWebStatic");
-        window.sessionStorage.removeWhere((key, value) => key.startsWith("msal"));
+        window.sessionStorage
+            .removeWhere((key, value) => key.startsWith("msal"));
       }
     }
 

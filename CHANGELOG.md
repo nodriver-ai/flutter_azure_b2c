@@ -1,3 +1,6 @@
+## 0.0.8
+* iOS: iOS devices are now supported.
+
 ## 0.0.7
 Bug fix:
 * Web: solved issue when using REDIRECT method and user clicks forgot password and either INIT and PASSWORD_RESET callbacks are
