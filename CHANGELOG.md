@@ -1,3 +1,7 @@
+## 0.0.9
+* iOS: fixed missing dependency flutter.h
+* Android: compileSdkVersion 30 -> 31; kotlin_version 1.3.50 -> 1.7.10 
+
 ## 0.0.8
 * iOS: iOS devices are now supported.
 
