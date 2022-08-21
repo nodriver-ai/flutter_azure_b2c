@@ -302,12 +302,6 @@ class B2CProvider {
                     data: nil
                 ))
             }
-            self.operationListener.onEvent(operationResult: B2COperationResult(
-                tag: tag,
-                source: source,
-                reason: B2COperationState.SUCCESS,
-                data: nil
-            ))
         }
     }
     
