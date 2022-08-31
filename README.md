@@ -54,7 +54,7 @@ Add flutter_azure_b2c to your pubspec:
 ```
 For more information see https://github.com/AzureAD/microsoft-authentication-library-for-android.
 
-* Prepare a JSON configuration file for AzureB2C initialization in <project root>/android/app/main/res/raw/ following this template:
+* Prepare a JSON configuration file (named `auth_config.json` in the example code) for AzureB2C initialization(`AzureB2C.init("auth_config"));`) in <project root>/android/app/main/res/raw/ following this template:
 ```json
     {
         "client_id" : "<application (client) id>",
@@ -81,7 +81,7 @@ See https://docs.microsoft.com/en-us/azure/active-directory/develop/tutorial-v2-
 
 ### IOS
 
-* Prepare a JSON configuration file for AzureB2C initialization in <project root>/ios/Resources following this template:
+* Prepare a JSON configuration file (named `auth_config.json` in the example code) for AzureB2C initialization(`AzureB2C.init("auth_config"));`) in <project root>/ios/Resources following this template:
 ```json
     {
         "client_id" : "<application (client) id>",
@@ -117,7 +117,7 @@ Web implementation depends from the package msal_js (for more information see ht
 For more information about MSAL web see https://github.com/AzureAD/microsoft-authentication-library-for-js/tree/dev/lib/msal-browser#usage.
 
 
-* Prepare a JSON configuration file for AzureB2C initialization in <project root>/web/asset/ following this template:
+* Prepare a JSON configuration file (named `auth_config.json` in the example code) for AzureB2C initialization(`AzureB2C.init("auth_config"));`) in <project root>/web/asset/ following this template:
 ```json
     {
         "client_id" : "<application (client) id>",
@@ -147,7 +147,7 @@ In <root>/example/lib/main.dart there is a simple demonstration app. In order to
 
 * Configure a B2C app following Microsoft documentation (see https://docs.microsoft.com/en-us/azure/active-directory/develop/msal-overview).
 
-* Prepare a configuration file using previous templates:
+* Prepare a configuration file using previous templates to match the init (e.g. `AzureB2C.init("auth_config"));`):
     * Android: 
         * path: android/app/main/res/raw/
     * IOS:
@@ -166,6 +166,33 @@ In <root>/example/lib/main.dart there is a simple demonstration app. In order to
         * flutter launch -d chrome --web-port <port>
         * Note: choose port number according to the redirect uri registered in the B2C app.
 
-
+In VS Code you can create a launch configuration like the one below:
+```json
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "touchscreen",
+            "request": "launch",
+            "type": "dart",
+            "args": ["--web-port", "<REDIRECT_PORT>"]
+        },
+        {
+            "name": "touchscreen (profile mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile",
+            "args": ["--web-port", "<REDIRECT_PORT>"]
+        },
+        {
+            "name": "touchscreen (release mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release",
+            "args": ["--web-port", "<REDIRECT_PORT>"]
+        }
+    ]
+}
+```
 
 
