@@ -54,7 +54,7 @@ Add flutter_azure_b2c to your pubspec:
 ```
 For more information see https://github.com/AzureAD/microsoft-authentication-library-for-android.
 
-* Prepare a JSON configuration file (named `auth_config.json` in the example code) for AzureB2C initialization(`AzureB2C.init("auth_config"));`) in <project root>/android/app/main/res/raw/ following this template:
+* Prepare a JSON configuration file (named `auth_config.json` in the example code) for AzureB2C initialization(`AzureB2C.init("auth_config")`) in <project root>/android/app/main/res/raw/ following this template:
 ```json
     {
         "client_id" : "<application (client) id>",
@@ -81,7 +81,7 @@ See https://docs.microsoft.com/en-us/azure/active-directory/develop/tutorial-v2-
 
 ### IOS
 
-* Prepare a JSON configuration file (named `auth_config.json` in the example code) for AzureB2C initialization(`AzureB2C.init("auth_config"));`) in <project root>/ios/Resources following this template:
+* Prepare a JSON configuration file (named `auth_config.json` in the example code) for AzureB2C initialization(`AzureB2C.init("auth_config")`) in <project root>/ios/Resources following this template:
 ```json
     {
         "client_id" : "<application (client) id>",
@@ -117,7 +117,7 @@ Web implementation depends from the package msal_js (for more information see ht
 For more information about MSAL web see https://github.com/AzureAD/microsoft-authentication-library-for-js/tree/dev/lib/msal-browser#usage.
 
 
-* Prepare a JSON configuration file (named `auth_config.json` in the example code) for AzureB2C initialization(`AzureB2C.init("auth_config"));`) in <project root>/web/asset/ following this template:
+* Prepare a JSON configuration file (named `auth_config.json` in the example code) for AzureB2C initialization(`AzureB2C.init("auth_config")`) in <project root>/web/asset/ following this template:
 ```json
     {
         "client_id" : "<application (client) id>",
@@ -147,7 +147,7 @@ In <root>/example/lib/main.dart there is a simple demonstration app. In order to
 
 * Configure a B2C app following Microsoft documentation (see https://docs.microsoft.com/en-us/azure/active-directory/develop/msal-overview).
 
-* Prepare a configuration file using previous templates to match the init (e.g. `AzureB2C.init("auth_config"));`):
+* Prepare a configuration file using previous templates to match the init (e.g. `AzureB2C.init("auth_config")`):
     * Android: 
         * path: android/app/main/res/raw/
     * IOS:
