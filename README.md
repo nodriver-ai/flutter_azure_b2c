@@ -54,6 +54,8 @@ Add flutter_azure_b2c to your pubspec:
 ```
 For more information see https://github.com/AzureAD/microsoft-authentication-library-for-android.
 
+
+
 * Prepare a JSON configuration file (named `auth_config.json` in the example code) for AzureB2C initialization(`AzureB2C.init("auth_config")`) in <project root>/android/app/main/res/raw/ following this template:
 ```json
     {
@@ -78,6 +80,17 @@ For more information see https://github.com/AzureAD/microsoft-authentication-lib
     }
 ```
 See https://docs.microsoft.com/en-us/azure/active-directory/develop/tutorial-v2-android for information about how to configure your B2C application and generate <YOUR_BASE64_URL_ENCODED_PACKAGE_SIGNATURE>.
+
+* Your app might crash in release, if this is the case you need to add these two lines of code in your app's build.gradle file (thanks to users euphoria3k and emaborsa for providing this fix):
+```gradle
+buildTypes {
+        release {
+            ...
+            minifyEnabled false
+            shrinkResources false
+        }
+    }
+```
 
 ### IOS
 
