@@ -308,13 +308,17 @@ class B2CProvider {
     private func setHostAndTenantFromAuthority(tag: String, authority: MSALAuthority) {
         let parts = authority.url.absoluteString.split(usingRegex: "https://|/")
         hostName = parts[1]
-        tenantName = parts[2]
+        if authority.url.absoluteString.contains("/tfp/") {
+            tenantName = parts[3]
+        } else {
+            tenantName = parts[2]
+        }
         print("B2CProvider [\(tag)] host: \(hostName ?? "nil"), tenant: \(tenantName ?? "nil")")
     }
     
     private func getAuthorityFromPolicyName(tag: String, policyName: String, source: String) -> MSALB2CAuthority? {
         do {
-            let urlString = "https://\(hostName!)/\(tenantName!)/\(policyName)/"
+            let urlString = "https://\(hostName!)/tfp/\(tenantName!)/\(policyName)/"
             let authorityURL = URL(string: urlString)!
             return try MSALB2CAuthority(url: authorityURL)
         }

@@ -32,7 +32,10 @@ class B2CAuthority {
   late final bool isDefault;
 
   /// Return the policy name associathed to the authority.
-  String get policyName => authorityURL.split(RegExp("https://|/"))[3];
+  String get policyName =>
+      (authorityURL.contains('tfp'))
+          ? authorityURL.split(RegExp("https://|/"))[4]
+          : authorityURL.split(RegExp("https://|/"))[3];
 
   /// Default constructor.
   ///
