@@ -2,7 +2,7 @@ group 'com.nodriver.flutter_azure_b2c'
 version '1.0-SNAPSHOT'
 
 buildscript {
-    ext.kotlin_version = '1.7.10'
+    ext.kotlin_version = '1.8.0'
     repositories {
         google()
         jcenter()
@@ -12,7 +12,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.1.0'
+        classpath 'com.android.tools.build:gradle:7.0.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -43,12 +43,34 @@ apply plugin: 'kotlin-android'
 android {
     compileSdkVersion 31
 
+    namespace 'com.nodriver.flutter_azure_b2c'
+
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
     }
+
     defaultConfig {
         minSdkVersion 16
     }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(11)
+        }
+    }
+}
+
+kotlin {
+    jvmToolchain(11)
+}
+
+kotlinOptions {
+    jvmTarget = "11"
 }
 
 dependencies {
